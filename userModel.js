@@ -2,12 +2,11 @@ const fs = require("fs");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
 
-const usersFilePath = "users.json";
+const usersStorage = "users.json";
 
-// Helper function to load users from the JSON file
 function loadUsers() {
     try {
-        const data = fs.readFileSync(usersFilePath);
+        const data = fs.readFileSync(usersStorage);
         return JSON.parse(data);
     } catch (err) {
         console.error("Error reading users file", err);
@@ -15,20 +14,16 @@ function loadUsers() {
     }
 }
 
-// Helper function to save users to the JSON file
 function saveUsers(users) {
     try {
-        fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
+        fs.writeFileSync(usersStorage, JSON.stringify(users, null, 2));
     } catch (err) {
         console.error("Error writing users file", err);
     }
 }
 
-// Static methods for user operations
 const User = {
-    // Signup method
     async signup(email, password) {
-        // Validation
         if (!email || !password) {
             throw new Error("All fields must be filled");
         }
@@ -50,7 +45,7 @@ const User = {
         }
 
         const salt = await bcrypt.genSalt(10);
-        const hash = await bcrypt.hash(password, salt); // Password hash
+        const hash = await bcrypt.hash(password, salt);
 
         const newUser = { email, password: hash };
         users.push(newUser);
@@ -58,7 +53,6 @@ const User = {
         return newUser;
     },
 
-    // Login method
     async login(email, password) {
         if (!email || !password) {
             throw new Error("All fields must be filled");

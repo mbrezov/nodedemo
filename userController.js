@@ -2,13 +2,14 @@ const fs = require("fs");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
+const crypto = require("crypto");
 require("dotenv").config();
 
-const usersFilePath = "users.json";
+const usersStorage = "users.json";
 
 function loadUsers() {
     try {
-        const data = fs.readFileSync(usersFilePath);
+        const data = fs.readFileSync(usersStorage);
         return JSON.parse(data);
     } catch (err) {
         console.error("Error reading users file", err);
@@ -18,28 +19,31 @@ function loadUsers() {
 
 function saveUsers(users) {
     try {
-        fs.writeFileSync(usersFilePath, JSON.stringify(users, null, 2));
+        fs.writeFileSync(usersStorage, JSON.stringify(users, null, 2));
     } catch (err) {
         console.error("Error writing users file", err);
     }
 }
 
-// Helper function to create JWT token
 const createToken = (_id) => {
-    return jwt.sign({ _id }, "dadasdadasda", { expiresIn: "30d" });
+    const randomBytes = crypto.randomBytes(32);
+    const jwtSecretKey = randomBytes.toString("base64");
+    return jwt.sign({ _id }, jwtSecretKey);
 };
 
 // Signup controller function
 const signupUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, confirmPassword } = req.body;
     try {
-        // Validation
         if (!email || !password) {
             throw new Error("All fields must be filled");
         }
-
         if (!validator.isEmail(email)) {
             throw new Error("Email is not valid");
+        }
+
+        if (password !== confirmPassword) {
+            throw new Error("Passwords doesn't match");
         }
 
         const users = loadUsers();
@@ -54,16 +58,13 @@ const signupUser = async (req, res) => {
             throw new Error("Password is not strong enough");
         }
 
-        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hash = await bcrypt.hash(password, salt);
 
-        // Add new user to the array
         const newUser = { email, password: hash };
         users.push(newUser);
         saveUsers(users);
 
-        // Create JWT token
         const token = createToken(newUser._id);
 
         res.status(200).json({ email, token });
@@ -78,7 +79,6 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Validation
         if (!email || !password) {
             throw new Error("All fields must be filled");
         }
@@ -95,14 +95,12 @@ const loginUser = async (req, res) => {
             throw new Error("User not found");
         }
 
-        // Compare passwords
         const match = await bcrypt.compare(password, user.password);
 
         if (!match) {
             throw new Error("Incorrect password");
         }
 
-        // Create JWT token
         const token = createToken(user._id);
 
         res.status(200).json({ email, token });
