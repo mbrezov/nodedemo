@@ -43,7 +43,7 @@ const signupUser = async (req, res) => {
         }
 
         if (password !== confirmPassword) {
-            throw new Error("Passwords doesn't match");
+            throw new Error("Passwords don't match");
         }
 
         const users = loadUsers();
